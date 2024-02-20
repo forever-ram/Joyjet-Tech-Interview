@@ -22,7 +22,8 @@ class CartsController < ApplicationController
     params.permit(
       articles: [:id, :name, :price],
       carts: [:id, items: [:article_id, :quantity]],
-      delivery_fees: [:price, eligible_transaction_volume: [:min_price, :max_price]]
+      delivery_fees: [:price, eligible_transaction_volume: [:min_price, :max_price]],
+      discounts: [:article_id, :type, :value]
     )
   end
 
@@ -30,7 +31,8 @@ class CartsController < ApplicationController
     @cart_service ||= CartService.new(
       checkout_params[:articles],
       checkout_params[:carts],
-      checkout_params[:delivery_fees]
+      checkout_params[:delivery_fees],
+      checkout_params[:discounts]
     )
   end
 end

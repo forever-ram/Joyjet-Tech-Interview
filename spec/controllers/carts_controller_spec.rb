@@ -140,6 +140,58 @@ RSpec.describe CartsController, type: :controller do
           expect(JSON.parse(response.body)).to eq({ 'error' => 'Delivery fee is missing for the range of price - 2000' })
         end
       end
+
+      context 'with discounts' do
+        let(:discounts) do
+          [
+            { "article_id" => 1, "type" => "amount", "value" => 20 },
+            { "article_id" => 2, "type" => "percentage", "value" => 10 }
+          ]
+        end
+
+        it "should return cart values on discounted price with delivery_fee applied" do
+          post :checkout, params: {
+            articles: articles,
+            carts: carts,
+            delivery_fees: delivery_fees,
+            discounts: discounts
+          }, as: :json
+          expect(JSON.parse(response.body)).to eq({
+            "carts" => [
+              {
+                "id" => 1,
+                "total" => 2240 # 1840 (discounted price) + 400 (delivery fee)
+              },
+              {
+                "id" => 2,
+                "total" => 1780 # 1380 (discounted price) + 400 (delivery fee)
+              },
+              {
+                "id" => 3,
+                "total" => 800
+              }
+            ]
+          })
+        end
+      end
+    end
+
+    context 'with invalid discounts parameter' do
+      it 'returns an unprocessable entity response' do
+        invalid_discounts = [
+          { "article_id" => 2, "type" => "amount" }
+        ]
+        post :checkout, params: { articles: articles, carts: carts, discounts: invalid_discounts }, as: :json
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+
+      it 'renders the error message' do
+        invalid_discounts = [
+          { "article_id" => 2, "type" => "amount" }
+        ]
+        post :checkout, params: { articles: articles, carts: carts, discounts: invalid_discounts }, as: :json
+        expect(JSON.parse(response.body)).to eq({ 'error' => "The property '#/discounts/0' did not contain a required property of 'value'" })
+      end
     end
   end
 end

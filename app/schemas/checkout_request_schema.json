@@ -88,6 +88,32 @@
           "price"
         ]
       }
+    },
+    "discounts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "article_id": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "amount",
+              "percentage"
+            ]
+          },
+          "value": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "article_id",
+          "type",
+          "value"
+        ]
+      }
     }
   },
   "required": [

@@ -67,5 +67,39 @@ RSpec.describe CartService, type: :service do
         ])
       end
     end
+
+    context 'when discounts are provided' do
+      let(:discounts) do
+        [
+          { "article_id" => 1, "type" => "amount", "value" => 20 },
+          { "article_id" => 2, "type" => "percentage", "value" => 10 }
+        ]
+      end
+    
+      it 'applies discounts to the total price' do
+        cart_service = CartService.new(articles, carts, nil, discounts)
+        expect(cart_service.call).to eq([
+          { "id" => 1, "total" => 160 }, # (price of water - 20) * 2 (quantity)
+          { "id" => 2, "total" => 900 } # (price of honey) * 5 (quantity) - 10% discount
+        ])
+      end
+    end
+    
+    context 'when both delivery fees and discounts are provided' do
+      let(:discounts) do
+        [
+          { "article_id" => 1, "type" => "amount", "value" => 20 },
+          { "article_id" => 2, "type" => "percentage", "value" => 10 }
+        ]
+      end
+    
+      it 'applies both delivery fees and discounts to the total price' do
+        cart_service = CartService.new(articles, carts, delivery_fees, discounts)
+        expect(cart_service.call).to eq([
+          { "id" => 1, "total" => 210 }, # (price of water - 20) * 2 (quantity) + 50 (delivery fee)
+          { "id" => 2, "total" => 950 } # (price of honey) * 5 (quantity) - 10% discount +  50 (delivery fee)
+        ])
+      end
+    end    
   end
 end
