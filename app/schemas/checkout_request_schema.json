@@ -56,6 +56,38 @@
           "items"
         ]
       }
+    },
+    "delivery_fees": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "eligible_transaction_volume": {
+            "type": "object",
+            "properties": {
+              "min_price": {
+                "type": "integer"
+              },
+              "max_price": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "min_price"
+            ]
+          },
+          "price": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "eligible_transaction_volume",
+          "price"
+        ]
+      }
     }
   },
   "required": [

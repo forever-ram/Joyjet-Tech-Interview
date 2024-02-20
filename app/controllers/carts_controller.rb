@@ -4,7 +4,7 @@ class CartsController < ApplicationController
     begin
       JSON::Validator.validate!(request_schema, checkout_params.to_unsafe_h)
       render json: { carts: cart_service.call }, status: :ok
-    rescue JSON::Schema::ValidationError => e
+    rescue JSON::Schema::ValidationError, MissingDeliveryFeeRangeError => e
       render json: { error: e.message }, status: :unprocessable_entity
     rescue => e
       logger.error "An error occurred: #{e.message}"
@@ -21,14 +21,16 @@ class CartsController < ApplicationController
   def checkout_params
     params.permit(
       articles: [:id, :name, :price],
-      carts: [:id, items: [:article_id, :quantity]]
+      carts: [:id, items: [:article_id, :quantity]],
+      delivery_fees: [:price, eligible_transaction_volume: [:min_price, :max_price]]
     )
   end
 
   def cart_service
     @cart_service ||= CartService.new(
       checkout_params[:articles],
-      checkout_params[:carts]
+      checkout_params[:carts],
+      checkout_params[:delivery_fees]
     )
   end
 end

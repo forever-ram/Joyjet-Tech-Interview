@@ -1,51 +1,69 @@
 require 'rails_helper'
 
 RSpec.describe CartService, type: :service do
-  describe "#call" do
-    let(:articles) do
-      [
-        { "id" => 1, "name" => "water", "price" => 100 },
-        { "id" => 2, "name" => "honey", "price" => 200 }
-      ]
-    end
+  let(:articles) do
+    [
+      { "id" => 1, "name" => "water", "price" => 100 },
+      { "id" => 2, "name" => "honey", "price" => 200 }
+    ]
+  end
 
-    let(:carts) do
-      [
-        { "id" => 1, "items" => [{ "article_id" => 1, "quantity" => 2 }] },
-        { "id" => 2, "items" => [{ "article_id" => 2, "quantity" => 1 }] }
-      ]
-    end
+  let(:carts) do
+    [
+      { "id" => 1, "items" => [{ "article_id" => 1, "quantity" => 2 }] },
+      { "id" => 2, "items" => [{ "article_id" => 2, "quantity" => 5 }] }
+    ]
+  end
 
-    it "calculates total price for each cart" do
-      service = CartService.new(articles, carts)
-      expect(service.call).to eq([
-        { "id" => 1, "total" => 200 },
-        { "id" => 2, "total" => 200 }
-      ])
-    end
+  let(:delivery_fees) do
+    [
+      { "eligible_transaction_volume" => { "min_price" => 0, "max_price" => 1000 }, "price" => 50 },
+      { "eligible_transaction_volume" => { "min_price" => 1000, "max_price" => nil }, "price" => 0 }
+    ]
+  end
 
-    context "when carts are empty" do
-      let(:carts) { [] }
+  describe '#call' do
+    context 'when delivery fees are not provided' do
+      it 'does not apply any delivery fees' do
+        cart_service = CartService.new(articles, carts)
+        expect(cart_service.call).to eq([
+          { "id" => 1, "total" => 200 }, # (price of water) * 2 (quantity)
+          { "id" => 2, "total" => 1000 } # (price of honey) * 5 (quantity)
+        ])
+      end
 
-      it "returns empty array" do
-        service = CartService.new(articles, carts)
-        expect(service.call).to eq([])
+      context "when carts are empty" do
+        let(:carts) { [] }
+        it "returns empty array" do
+          service = CartService.new(articles, carts)
+          expect(service.call).to eq([])
+        end
+      end
+  
+      context "when items in a cart are empty" do
+        let(:carts) do
+          [
+            { "id" => 1, "items" => [{ "article_id" => 1, "quantity" => 2 }] },
+            { "id" => 2, "items" => [] }
+          ]
+        end
+  
+        it "returns total as zero" do
+          service = CartService.new(articles, carts)
+          expect(service.call).to eq([
+            { "id" => 1, "total" => 200 },
+            { "id" => 2, "total" => 0 }
+          ])
+        end
       end
     end
 
-    context "when items in a cart are empty" do
-      let(:carts) do
-        [
-          { "id" => 1, "items" => [{ "article_id" => 1, "quantity" => 2 }] },
-          { "id" => 2, "items" => [] }
-        ]
-      end
-
-      it "returns total as zero" do
-        service = CartService.new(articles, carts)
-        expect(service.call).to eq([
-          { "id" => 1, "total" => 200 },
-          { "id" => 2, "total" => 0 }
+    context 'when delivery fees are provided' do
+      it 'applies delivery fees to the total price' do
+        cart_service = CartService.new(articles, carts, delivery_fees)
+        expect(cart_service.call).to eq([
+          { "id" => 1, "total" => 250 }, # (price of water) * 2 (quantity) + 50 (delivery fee)
+          { "id" => 2, "total" => 1000 } # (price of honey) * 5 (quantity) +  0 (delivery fee)
         ])
       end
     end
